@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'tab_page.dart';
 
 void main() => runApp(MyApp(
   //通过window.defaultRouteName获取从native传递过来的参数,需要导入dart:ui包
@@ -73,7 +74,8 @@ class _MyHomePageState extends State<MyHomePage> {
     Navigator.of(context).push(
       new MaterialPageRoute(
           builder: (context) {
-            return MyHomePage(initParams: "/route2");
+            MyTabPage mypage = MyTabPage();
+            return mypage;
             return new Scaffold(
               appBar: new AppBar(
                 title: new Text('Saved Suggestions'),
