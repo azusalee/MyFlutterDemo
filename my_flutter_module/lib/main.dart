@@ -1,11 +1,13 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'tab_page.dart';
 
 void main() => runApp(MyApp(
-  //通过window.defaultRouteName获取从native传递过来的参数,需要导入dart:ui包
-  initParams: window.defaultRouteName,
-));
+      //通过window.defaultRouteName获取从native传递过来的参数,需要导入dart:ui包
+      initParams: window.defaultRouteName,
+    ));
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -40,8 +42,27 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   String _routePath;
+  AnimationController _animationController;
+  Animation _myAnimation;
+  int _favouriteCount = 41;
+  bool _isFavourite = true;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _routePath = widget.initParams;
+    _animationController =
+        AnimationController(duration: Duration(milliseconds: 275), vsync: this);
+    _myAnimation =
+        CurvedAnimation(parent: _animationController, curve: Curves.linear);
+    _myAnimation.addListener(() {
+      setState(() {});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,19 +73,25 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       body: Center(
-        child: _widgetRoute(_routePath!=null?_routePath:widget.initParams),
+        child: _widgetRoute(_routePath),
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Change',
         child: Icon(Icons.refresh),
         onPressed: () {
-          setState(() {
-            if (_routePath == "/route1") {
-              _routePath = "/route2";
-            }else {
-              _routePath = "/route1";
-            }
-          });
+          if (_routePath == "/route1") {
+            _routePath = "/route2";
+          } else {
+            _routePath = "/route1";
+          }
+          _animationController.forward(from: 0.0);
+//          setState(() {
+//            if (_routePath == "/route1") {
+//              _routePath = "/route2";
+//            }else {
+//              _routePath = "/route1";
+//            }
+//          });
         },
       ),
     );
@@ -73,20 +100,19 @@ class _MyHomePageState extends State<MyHomePage> {
   void _pushNextPage() {
     Navigator.of(context).push(
       new MaterialPageRoute(
-          builder: (context) {
-            MyTabPage mypage = MyTabPage();
-            return mypage;
-            return new Scaffold(
-              appBar: new AppBar(
-                title: new Text('Saved Suggestions'),
+        builder: (context) {
+          return MyTabPage();
+          return new Scaffold(
+            appBar: new AppBar(
+              title: new Text('Saved Suggestions'),
+            ),
+            body: Center(
+              child: Text(
+                "next page",
               ),
-              body: Center (
-                child: Text(
-                  "next page",
-                ),
-              ),
-            );
-          },
+            ),
+          );
+        },
       ),
     );
   }
@@ -103,19 +129,109 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget route1Widget() {
-    return Center(
-      child: Text(
-        "this is route1Widget",
-        style: TextStyle(color: Colors.red, fontSize: 20),
+    Widget titleSection = Container(
+      padding: const EdgeInsets.all(32.0),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Text(
+                    'Your Name',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Text(
+                  'Your Loop',
+                  style: TextStyle(color: Colors.grey[500]),
+                )
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              _isFavourite?Icons.star:Icons.star_border,
+              color: Colors.red,
+            ),
+            onPressed: (){
+              setState(() {
+                _isFavourite = !_isFavourite;
+                if (_isFavourite) {
+                  _favouriteCount += 1;
+                }else{
+                  _favouriteCount -= 1;
+                }
+              });
+            },
+          ),
+          Text('$_favouriteCount')
+        ],
       ),
     );
+    Widget buttonSection = Container(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: <Widget>[
+          buildButtonColumn(Icons.call, 'CALL', (){
+            print('Call did tap');
+          }),
+          buildButtonColumn(Icons.near_me, 'ROUTE', (){
+            print('Route did tap');
+          }),
+          buildButtonColumn(Icons.share, 'SHARE',(){
+            print('Share did tap');
+          }),
+        ],
+      ),
+    );
+
+    return ListView(
+      children: [
+        Image.asset(
+          'images/lake.jpg',
+          width: 600.0,
+          height: 240.0 * _animationController.value,
+          fit: BoxFit.cover,
+        ),
+        titleSection,
+        buttonSection,
+      ],
+    );
+  }
+
+  GestureDetector buildButtonColumn(IconData icon, String label, VoidCallback callback) {
+    Color color = Theme.of(context).primaryColor;
+    return GestureDetector(
+        onTap: callback,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(icon, color: color),
+            Container(
+              margin: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.w400,
+                  color: color,
+                ),
+              ),
+            )
+          ],
+        ));
   }
 
   Widget route2Widget() {
     return Center(
       child: Text(
         "this is route2Widget",
-        style: TextStyle(color: Colors.blue, fontSize: 20),
+        style: TextStyle(
+            color: Colors.blue, fontSize: 20 + _animationController.value * 10),
       ),
     );
   }
@@ -129,8 +245,3 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
-
-
-
-
-
